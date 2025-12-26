@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>オフライン・ルーレット</title>
+  <title>お祭りルーレット（オフライン対応）</title>
 
   <!-- ===== PWA 追加 ===== -->
   <link rel="manifest" href="./manifest.webmanifest">
-  <meta name="theme-color" content="#ff9f43">
+  <meta name="theme-color" content="#ff3b5c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="ルーレット">
@@ -16,91 +16,223 @@
 
   <style>
     :root{
-      --bg-color:#fff9f0;
-      --panel-color:#ffffff;
-      --accent-color:#ff6b6b;
-      --text-color:#333;
+      --bg1:#12091f;        /* 夜空 */
+      --bg2:#2a0f3c;        /* 紫 */
+      --panel:#1b1230cc;    /* 半透明パネル */
+      --gold:#ffd56a;       /* 金 */
+      --red:#ff3b5c;        /* 朱 */
+      --blue:#3aa6ff;       /* 祭り青 */
+      --text:#fff7e6;
+      --ink:#1b1b1b;
     }
+
     body{
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Segoe UI", sans-serif;
-      background: var(--bg-color);
-      color: var(--text-color);
       margin:0;
+      min-height:100vh;
+      color:var(--text);
       display:flex;
       flex-direction:column;
       align-items:center;
-      min-height:100vh;
       overflow-x:hidden;
       padding-bottom: env(safe-area-inset-bottom);
+
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(255,213,106,.25), transparent 60%),
+        radial-gradient(900px 600px at 80% 20%, rgba(58,166,255,.20), transparent 55%),
+        radial-gradient(900px 700px at 60% 90%, rgba(255,59,92,.18), transparent 55%),
+        linear-gradient(160deg, var(--bg1), var(--bg2));
     }
 
-    .screen{display:none;width:100%;max-width:520px;padding:20px;box-sizing:border-box;text-align:center;}
+    /* 提灯みたいな上の飾り */
+    body::before{
+      content:"";
+      position:fixed;
+      left:0; right:0; top:0;
+      height:110px;
+      pointer-events:none;
+      background:
+        radial-gradient(circle at 7% 60%, rgba(255,59,92,.95) 0 18px, rgba(0,0,0,0) 19px),
+        radial-gradient(circle at 14% 60%, rgba(255,213,106,.95) 0 18px, rgba(0,0,0,0) 19px),
+        radial-gradient(circle at 21% 60%, rgba(58,166,255,.95) 0 18px, rgba(0,0,0,0) 19px),
+        radial-gradient(circle at 28% 60%, rgba(255,59,92,.95) 0 18px, rgba(0,0,0,0) 19px),
+        radial-gradient(circle at 35% 60%, rgba(255,213,106,.95) 0 18px, rgba(0,0,0,0) 19px),
+        radial-gradient(circle at 42% 60%, rgba(58,166,255,.95) 0 18px, rgba(0,0,0,0) 19px),
+        radial-gradient(circle at 49% 60%, rgba(255,59,92,.95) 0 18px, rgba(0,0,0,0) 19px),
+        radial-gradient(circle at 56% 60%, rgba(255,213,106,.95) 0 18px, rgba(0,0,0,0) 19px),
+        radial-gradient(circle at 63% 60%, rgba(58,166,255,.95) 0 18px, rgba(0,0,0,0) 19px),
+        radial-gradient(circle at 70% 60%, rgba(255,59,92,.95) 0 18px, rgba(0,0,0,0) 19px),
+        radial-gradient(circle at 77% 60%, rgba(255,213,106,.95) 0 18px, rgba(0,0,0,0) 19px),
+        radial-gradient(circle at 84% 60%, rgba(58,166,255,.95) 0 18px, rgba(0,0,0,0) 19px),
+        radial-gradient(circle at 91% 60%, rgba(255,59,92,.95) 0 18px, rgba(0,0,0,0) 19px),
+        linear-gradient(to bottom, rgba(0,0,0,.35), rgba(0,0,0,0));
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.45));
+      opacity:.95;
+    }
+
+    .screen{
+      display:none;
+      width:100%;
+      max-width:520px;
+      padding:22px 18px;
+      box-sizing:border-box;
+      text-align:center;
+    }
     .active{display:block;animation:fadeIn .25s;}
     @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
     .admin-panel{
-      background:var(--panel-color);
-      padding:25px;
-      border-radius:25px;
-      box-shadow:0 10px 30px rgba(0,0,0,.05);
-      border:2px solid #ffda79;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding:22px;
+      border-radius:22px;
+      border: 3px solid rgba(255,213,106,.7);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      position:relative;
+      overflow:hidden;
+    }
+    .admin-panel::before{
+      content:"";
+      position:absolute; inset:-2px;
+      border-radius:22px;
+      padding:2px;
+      background: linear-gradient(135deg, rgba(255,213,106,.9), rgba(255,59,92,.8), rgba(58,166,255,.7));
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events:none;
+    }
+
+    .title{
+      margin: 4px 0 6px;
+      font-size: 22px;
+      letter-spacing: .08em;
+      font-weight: 900;
+      text-shadow: 0 6px 18px rgba(0,0,0,.45);
+    }
+    .sub{
+      margin: 0 0 14px;
+      font-size: 12px;
+      opacity: .85;
+      letter-spacing: .06em;
     }
 
     textarea{
       width:100%;
-      height:180px;
-      border:2px solid #ffda79;
-      border-radius:12px;
-      padding:12px;
-      font-size:16px;
+      height:200px;
+      border: 2px solid rgba(255,213,106,.65);
+      border-radius:14px;
+      padding:12px 12px;
+      font-size:15px;
       box-sizing:border-box;
       outline:none;
-      margin:10px 0;
+      margin:10px 0 6px;
       resize:vertical;
+      color: var(--text);
+      background: rgba(0,0,0,.22);
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,.15);
+    }
+
+    .note{
+      font-size:12px;
+      opacity:.85;
+      line-height:1.6;
+      text-align:left;
+      margin-top:10px;
     }
 
     #canvas{
       width:100%;
       max-width:460px;
       height:auto;
-      filter:drop-shadow(0 8px 20px rgba(0,0,0,.1));
       cursor:pointer;
       -webkit-tap-highlight-color: transparent;
+      border-radius: 999px;
+      box-shadow:
+        0 18px 45px rgba(0,0,0,.45),
+        0 0 0 6px rgba(255,213,106,.65),
+        0 0 0 12px rgba(255,59,92,.25);
+      background: rgba(0,0,0,.08);
     }
 
     #result{
-      font-size:36px;
-      font-weight:900;
-      margin:18px 0 10px;
-      color:#ff4757;
-      min-height:52px;
-      line-height: 1.2;
+      font-size: 34px;
+      font-weight: 900;
+      margin: 14px 0 10px;
+      color: var(--gold);
+      min-height: 52px;
+      line-height: 1.15;
+      text-shadow:
+        0 10px 25px rgba(0,0,0,.55),
+        0 0 22px rgba(255,213,106,.25);
     }
 
-    .hint{font-size:12px;opacity:.7;margin-top:6px;}
+    .hint{font-size:12px;opacity:.8;margin-top:6px;letter-spacing:.04em;}
 
     .btn{
-      cursor:pointer;border:none;border-radius:50px;font-weight:bold;
-      padding:15px 40px;font-size:20px;
+      cursor:pointer;
+      border:none;
+      border-radius: 999px;
+      font-weight: 900;
+      padding: 14px 34px;
+      font-size: 18px;
       -webkit-tap-highlight-color: transparent;
+      transition: transform .04s ease;
     }
-    .btn-primary{background:#ff9f43;color:#fff;}
-    .btn-spin{background:#ff4757;color:#fff;width:100%;max-width:260px;}
-    .btn-secondary{
-      background:#ced4da;color:#495057;
-      position:fixed;bottom:20px;right:20px;
-      font-size:12px;padding:8px 15px;border-radius:999px;
+    .btn:active{ transform: translateY(1px) scale(.99); }
+
+    .btn-primary{
+      color: var(--ink);
+      background: linear-gradient(180deg, #ffe08a, #ffb84d);
+      box-shadow: 0 14px 30px rgba(0,0,0,.35);
     }
 
-    .note{
-      font-size:12px;
-      opacity:.75;
-      line-height:1.5;
-      text-align:left;
-      margin-top:10px;
+    .btn-ghost{
+      color: var(--text);
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,213,106,.35);
+      box-shadow: 0 14px 30px rgba(0,0,0,.25);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
-    .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px;}
+
+    .btn-spin{
+      color: white;
+      width:100%;
+      max-width:280px;
+      background: linear-gradient(180deg, #ff4d6d, #ff1f4a);
+      box-shadow:
+        0 18px 40px rgba(0,0,0,.45),
+        0 0 0 4px rgba(255,213,106,.35);
+    }
+
+    .btn-secondary{
+      background: rgba(255,255,255,.14);
+      color: var(--text);
+      position:fixed;bottom:18px;right:18px;
+      font-size:12px;padding:9px 14px;border-radius:999px;
+      border: 1px solid rgba(255,213,106,.4);
+      box-shadow: 0 12px 26px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px;}
     .row .btn{font-size:14px;padding:10px 14px;border-radius:14px;}
+
+    .badge{
+      display:inline-block;
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(255,213,106,.15);
+      border: 1px solid rgba(255,213,106,.35);
+      margin-top:8px;
+      letter-spacing:.06em;
+    }
   </style>
 </head>
 
@@ -109,9 +241,9 @@
   <!-- 設定画面 -->
   <div id="adminScreen" class="screen active">
     <div class="admin-panel">
-      <h2>⚙️ 設定</h2>
+      <div class="title">🏮 お祭りルーレット</div>
+      <div class="sub">確率（分数OK）／残念を増やすと見た目も確率も合算</div>
 
-      <!-- 入力形式：景品名,重み（小数OK / 分数OK 例: 1/5000） -->
       <textarea id="itemsInput">アマギフ①,1/5000
 アマギフ②,1.5/5000
 残念,624.6875/5000
@@ -125,13 +257,14 @@
 
       <div class="row">
         <button class="btn btn-primary" onclick="start()">ルーレット開始</button>
-        <button class="btn" style="background:#f1f3f5;color:#333;border:1px solid rgba(0,0,0,.08);" onclick="resetItems()">初期化</button>
+        <button class="btn btn-ghost" onclick="resetItems()">初期化</button>
       </div>
 
+      <div class="badge">入力形式：景品名,重み（例：当たり,5 / 1/5000）</div>
+
       <div class="note">
-        ・形式：<b>景品名,重み</b>（例：特賞,1 / 当たり,5 / 残念,10）<br>
-        ・<b>分数</b>もOK（例：1/5000）<br>
-        ・同じ景品を<b>複数行</b>にすると、その分<b>見た目の枠も増え</b>、<b>確率も合算</b>されます。
+        ・同じ景品を複数行にすると <b>枠が増える</b> ＋ <b>確率も合算</b> されます。<br>
+        ・確率を固定したい場合は「総確率 ÷ 枠数」を各行に入れてください。
       </div>
     </div>
   </div>
@@ -140,7 +273,7 @@
   <div id="rouletteScreen" class="screen">
     <div id="result">Tap to Spin!</div>
     <canvas id="canvas" width="500" height="500"></canvas>
-    <div class="hint">キャンバスをタップでも回せます</div>
+    <div class="hint">🎆 キャンバスをタップでも回せます</div>
 
     <div style="margin-top:18px;">
       <button class="btn btn-spin" onclick="spin()">SPIN</button>
@@ -257,35 +390,81 @@
       const r = 230;
       const cx = 250, cy = 250;
 
-      // 見た目は等分（枠数を増やしたければ同名行を増やす）
+      // 見た目は等分（枠を増やしたい場合は行を増やす）
       const arc = 2 * Math.PI / items.length;
-
       ctx.clearRect(0,0,500,500);
 
+      const colors = ["#ff3b5c","#ffd56a","#3aa6ff","#ff7a3d","#8b5cf6","#22c55e"];
+
+      // 外枠（太い金縁）
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 8, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0,0,0,.10)";
+      ctx.fill();
+      ctx.restore();
+
       items.forEach((it, i) => {
+        const startA = angle + i * arc;
+        const endA = angle + (i + 1) * arc;
+
+        // セグメント
         ctx.beginPath();
-        ctx.fillStyle = `hsl(${i*360/items.length},80%,65%)`;
+        ctx.fillStyle = colors[i % colors.length];
         ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, r, angle + i*arc, angle + (i+1)*arc);
+        ctx.arc(cx, cy, r, startA, endA);
+        ctx.closePath();
         ctx.fill();
 
+        // セグメント境界線
+        ctx.strokeStyle = "rgba(255,255,255,.35)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // テキスト
         ctx.save();
         ctx.translate(cx, cy);
-        ctx.rotate(angle + i*arc + arc/2);
+        ctx.rotate(startA + arc / 2);
         ctx.fillStyle = "#fff";
-        ctx.font = "bold 18px sans-serif";
+        ctx.font = "900 18px sans-serif";
         ctx.textAlign = "right";
-        ctx.fillText(it.name, r - 20, 8);
+        // 文字の縁取り（看板っぽく）
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = "rgba(0,0,0,.35)";
+        ctx.strokeText(it.name, r - 22, 8);
+        ctx.fillText(it.name, r - 22, 8);
         ctx.restore();
       });
 
-      // ポインタ（右）
-      ctx.fillStyle = "#333";
+      // 中央の丸（夜店の鈴っぽい）
       ctx.beginPath();
-      ctx.moveTo(490, 250);
-      ctx.lineTo(460, 230);
-      ctx.lineTo(460, 270);
+      ctx.arc(cx, cy, 44, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0,0,0,.25)";
       ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, 38, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,213,106,.95)";
+      ctx.fill();
+
+      ctx.fillStyle = "#1b1b1b";
+      ctx.font = "900 16px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("祭", cx, cy + 6);
+
+      // ポインタ（右）
+      ctx.fillStyle="#111";
+      ctx.beginPath();
+      ctx.moveTo(494, 250);
+      ctx.lineTo(458, 226);
+      ctx.lineTo(458, 274);
+      ctx.closePath();
+      ctx.fill();
+
+      // ポインタの縁（金）
+      ctx.strokeStyle="rgba(255,213,106,.9)";
+      ctx.lineWidth=3;
+      ctx.stroke();
     }
 
     // 当選枠の中央で止める
@@ -301,6 +480,7 @@
       const mid = winner * arc + arc/2;
 
       const twoPi = 2 * Math.PI;
+      // 右ポインタ(角度0)に当選の中心が来るように
       const targetBase = ((-mid % twoPi) + twoPi) % twoPi;
       const currentNorm = ((angle % twoPi) + twoPi) % twoPi;
 
@@ -328,7 +508,6 @@
           document.getElementById("result").innerText = "🎊 " + items[winner].name + " 🎊";
         }
       }
-
       requestAnimationFrame(anim);
     }
 
