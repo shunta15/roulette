@@ -1,0 +1,21 @@
+{
+  "name": "オフライン ルーレット",
+  "short_name": "ルーレット",
+  "start_url": "/roulette/",
+  "scope": "/roulette/",
+  "display": "standalone",
+  "background_color": "#fff9f0",
+  "theme_color": "#ff9f43",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
