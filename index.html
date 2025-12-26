@@ -48,7 +48,7 @@
 
     textarea{
       width:100%;
-      height:140px;
+      height:180px;
       border:2px solid #ffda79;
       border-radius:12px;
       padding:12px;
@@ -74,11 +74,15 @@
       margin:18px 0 10px;
       color:#ff4757;
       min-height:52px;
+      line-height: 1.2;
     }
+
+    .hint{font-size:12px;opacity:.7;margin-top:6px;}
 
     .btn{
       cursor:pointer;border:none;border-radius:50px;font-weight:bold;
       padding:15px 40px;font-size:20px;
+      -webkit-tap-highlight-color: transparent;
     }
     .btn-primary{background:#ff9f43;color:#fff;}
     .btn-spin{background:#ff4757;color:#fff;width:100%;max-width:260px;}
@@ -87,6 +91,16 @@
       position:fixed;bottom:20px;right:20px;
       font-size:12px;padding:8px 15px;border-radius:999px;
     }
+
+    .note{
+      font-size:12px;
+      opacity:.75;
+      line-height:1.5;
+      text-align:left;
+      margin-top:10px;
+    }
+    .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px;}
+    .row .btn{font-size:14px;padding:10px 14px;border-radius:14px;}
   </style>
 </head>
 
@@ -96,15 +110,29 @@
   <div id="adminScreen" class="screen active">
     <div class="admin-panel">
       <h2>⚙️ 設定</h2>
+
+      <!-- 入力形式：景品名,重み（小数OK / 分数OK 例: 1/5000） -->
       <textarea id="itemsInput">アマギフ①,1/5000
 アマギフ②,1.5/5000
-残念,4998/5000
-残念,4998/5000
-残念,4998/5000
-残念,4998/5000
-残念,4998/5000
-残念,4998/5000</textarea>
-      <button class="btn btn-primary" onclick="start()">ルーレット開始</button>
+残念,624.6875/5000
+残念,624.6875/5000
+残念,624.6875/5000
+残念,624.6875/5000
+残念,624.6875/5000
+残念,624.6875/5000
+残念,624.6875/5000
+残念,624.6875/5000</textarea>
+
+      <div class="row">
+        <button class="btn btn-primary" onclick="start()">ルーレット開始</button>
+        <button class="btn" style="background:#f1f3f5;color:#333;border:1px solid rgba(0,0,0,.08);" onclick="resetItems()">初期化</button>
+      </div>
+
+      <div class="note">
+        ・形式：<b>景品名,重み</b>（例：特賞,1 / 当たり,5 / 残念,10）<br>
+        ・<b>分数</b>もOK（例：1/5000）<br>
+        ・同じ景品を<b>複数行</b>にすると、その分<b>見た目の枠も増え</b>、<b>確率も合算</b>されます。
+      </div>
     </div>
   </div>
 
@@ -112,7 +140,12 @@
   <div id="rouletteScreen" class="screen">
     <div id="result">Tap to Spin!</div>
     <canvas id="canvas" width="500" height="500"></canvas>
-    <button class="btn btn-spin" onclick="spin()">SPIN</button>
+    <div class="hint">キャンバスをタップでも回せます</div>
+
+    <div style="margin-top:18px;">
+      <button class="btn btn-spin" onclick="spin()">SPIN</button>
+    </div>
+
     <button class="btn btn-secondary" onclick="back()">設定へ</button>
   </div>
 
@@ -120,16 +153,96 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
 
-    let items = [];
+    let items = []; // [{name, weight}]
     let angle = 0;
     let spinning = false;
 
-    function start(){
-      items = document.getElementById("itemsInput").value
+    const LS_KEY = "roulette_items_text_v1";
+
+    function defaultItemsText(){
+      return `アマギフ①,1/5000
+アマギフ②,1.5/5000
+残念,624.6875/5000
+残念,624.6875/5000
+残念,624.6875/5000
+残念,624.6875/5000
+残念,624.6875/5000
+残念,624.6875/5000
+残念,624.6875/5000
+残念,624.6875/5000`;
+    }
+
+    function saveItemsText(){
+      localStorage.setItem(LS_KEY, document.getElementById("itemsInput").value);
+    }
+
+    function loadItemsText(){
+      const v = localStorage.getItem(LS_KEY);
+      if (v && v.trim()) document.getElementById("itemsInput").value = v;
+    }
+
+    function resetItems(){
+      if(!confirm("設定を初期化しますか？")) return;
+      document.getElementById("itemsInput").value = defaultItemsText();
+      saveItemsText();
+      alert("初期化しました");
+    }
+
+    // "1/5000" や "0.2" を数値にする
+    function parseWeight(raw) {
+      const s = (raw ?? "").trim();
+      if (!s) return 1;
+
+      // 分数 "a/b"
+      if (s.includes("/")) {
+        const [a, b] = s.split("/").map(x => Number(x.trim()));
+        if (Number.isFinite(a) && Number.isFinite(b) && b > 0) return a / b;
+      }
+
+      // 小数/整数
+      const n = Number(s);
+      if (Number.isFinite(n) && n > 0) return n;
+
+      return 1;
+    }
+
+    function parseItems() {
+      const lines = document.getElementById("itemsInput").value
         .split("\n")
-        .map(v => v.split(",")[0]);
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      items = lines.map(line => {
+        const [nameRaw, weightRaw] = line.split(",");
+        const name = (nameRaw || "").trim() || "（無名）";
+        const weight = parseWeight(weightRaw);
+        return { name, weight };
+      });
+    }
+
+    function totalWeight() {
+      return items.reduce((sum, it) => sum + it.weight, 0);
+    }
+
+    // 重み付け抽選（当選index）
+    function pickWinnerIndex() {
+      const t = totalWeight();
+      let r = Math.random() * t;
+      for (let i = 0; i < items.length; i++) {
+        r -= items[i].weight;
+        if (r <= 0) return i;
+      }
+      return items.length - 1;
+    }
+
+    function start(){
+      saveItemsText();
+      parseItems();
+      if (items.length === 0) return alert("項目がありません");
+
       document.getElementById("adminScreen").classList.remove("active");
       document.getElementById("rouletteScreen").classList.add("active");
+      document.getElementById("result").innerText = "Tap to Spin!";
       draw();
     }
 
@@ -139,53 +252,91 @@
     }
 
     function draw(){
+      if (items.length === 0) return;
+
       const r = 230;
       const cx = 250, cy = 250;
+
+      // 見た目は等分（枠数を増やしたければ同名行を増やす）
       const arc = 2 * Math.PI / items.length;
+
       ctx.clearRect(0,0,500,500);
 
-      items.forEach((item,i)=>{
+      items.forEach((it, i) => {
         ctx.beginPath();
         ctx.fillStyle = `hsl(${i*360/items.length},80%,65%)`;
-        ctx.moveTo(cx,cy);
-        ctx.arc(cx,cy,r,angle+i*arc,angle+(i+1)*arc);
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, angle + i*arc, angle + (i+1)*arc);
         ctx.fill();
 
         ctx.save();
-        ctx.translate(cx,cy);
-        ctx.rotate(angle+i*arc+arc/2);
-        ctx.fillStyle="#fff";
-        ctx.font="bold 18px sans-serif";
-        ctx.textAlign="right";
-        ctx.fillText(item,r-20,8);
+        ctx.translate(cx, cy);
+        ctx.rotate(angle + i*arc + arc/2);
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 18px sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText(it.name, r - 20, 8);
         ctx.restore();
       });
 
-      ctx.fillStyle="#333";
+      // ポインタ（右）
+      ctx.fillStyle = "#333";
       ctx.beginPath();
-      ctx.moveTo(490,250);
-      ctx.lineTo(460,230);
-      ctx.lineTo(460,270);
+      ctx.moveTo(490, 250);
+      ctx.lineTo(460, 230);
+      ctx.lineTo(460, 270);
       ctx.fill();
     }
 
+    // 当選枠の中央で止める
     function spin(){
-      if(spinning) return;
-      spinning=true;
-      const target = Math.random()*Math.PI*2 + Math.PI*6;
-      const start = angle;
-      const duration = 2500;
+      if (spinning) return;
+      if (items.length === 0) parseItems();
+      if (items.length === 0) return;
+
+      spinning = true;
+
+      const winner = pickWinnerIndex();
+      const arc = 2 * Math.PI / items.length;
+      const mid = winner * arc + arc/2;
+
+      const twoPi = 2 * Math.PI;
+      const targetBase = ((-mid % twoPi) + twoPi) % twoPi;
+      const currentNorm = ((angle % twoPi) + twoPi) % twoPi;
+
+      let delta = (targetBase - currentNorm + twoPi) % twoPi;
+      delta += (5 + Math.floor(Math.random()*3)) * twoPi; // 5〜7回転
+
+      const startAngle = angle;
+      const endAngle = angle + delta;
+      const duration = 2600 + Math.random()*700;
       const st = performance.now();
 
-      function anim(t){
-        const p = Math.min(1,(t-st)/duration);
-        angle = start + target*p;
+      function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
+      document.getElementById("result").innerText = "抽選中…";
+
+      function anim(now){
+        const p = Math.min(1, (now - st) / duration);
+        const e = easeOutCubic(p);
+        angle = startAngle + (endAngle - startAngle) * e;
         draw();
-        if(p<1) requestAnimationFrame(anim);
-        else spinning=false;
+
+        if (p < 1) requestAnimationFrame(anim);
+        else {
+          spinning = false;
+          document.getElementById("result").innerText = "🎊 " + items[winner].name + " 🎊";
+        }
       }
+
       requestAnimationFrame(anim);
     }
+
+    // タップでも回せる
+    canvas.addEventListener("click", spin);
+
+    // 初回：保存済み設定を復元
+    loadItemsText();
   </script>
 
   <!-- ===== Service Worker 登録（PWA）===== -->
