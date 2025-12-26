@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>お祝いルーレット</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #fff9f0; /* 明るいクリーム色 */
+            --panel-color: #ffffff;
+            --accent-color: #ff6b6b;
+            --text-color: #333;
+        }
+        body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        .screen { display: none; width: 100%; max-width: 600px; padding: 40px 20px; box-sizing: border-box; text-align: center; }
+        .active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 管理画面 */
+        .admin-panel { background: var(--panel-color); padding: 30px; border-radius: 30px; box-shadow: 0 15px 35px rgba(255,107,107,0.15); border: 3px solid #ffda79; }
+        h2 { color: #ff9f43; margin-top: 0; }
+        textarea { width: 100%; height: 120px; background: #fffcf0; border: 2px solid #ffda79; border-radius: 15px; padding: 15px; font-size: 16px; box-sizing: border-box; outline: none; }
+        
+        /* ルーレット画面 */
+        #canvas { width: 100%; max-width: 480px; height: auto; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); }
+        #result { font-size: 48px; font-weight: 900; margin: 20px 0; color: #ff4757; min-height: 60px; transition: 0.3s; }
+        .bounce { animation: bounce 0.6s cubic-bezier(0.36, 0, 0.66, -0.56) infinite alternate; }
+        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.2); } }
+
+        /* ボタン */
+        .btn { cursor: pointer; border: none; border-radius: 50px; font-weight: bold; transition: 0.3s; padding: 15px 40px; font-size: 20px; outline: none; }
+        .btn-primary { background: #ff9f43; color: white; margin-top: 20px; box-shadow: 0 5px #e67e22; }
+        .btn-primary:hover { background: #ffb142; }
+        .btn-spin { background: #ff4757; color: white; width: 220px; font-size: 26px; box-shadow: 0 6px #ff6b81; margin-top: 20px; }
+        .btn-spin:active { transform: translateY(4px); box-shadow: none; }
+        .btn-secondary { background: #ced4da; color: #495057; position: fixed; bottom: 20px; right: 20px; font-size: 12px; padding: 8px 15px; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+    <div id="adminScreen" class="screen active">
+        <div class="admin-panel">
+            <h2>🍭 ルーレット設定</h2>
+            <div style="text-align: left; margin-bottom: 20px;">
+                <p style="font-size: 14px; color: #666;">項目名と比率をカンマで区切って入力：</p>
+                <textarea id="itemsInput">特賞,1&#13;当たり,5&#13;残念,10&#13;残念,10</textarea>
+                <div style="margin-top: 15px;">
+                    <label style="display: block; margin: 10px 0;"><input type="checkbox" id="fakeDisplay" checked> 見た目を均等にする（内緒モード）</label>
+                    <label style="display: block; margin: 10px 0;"><input type="checkbox" id="hideText"> 項目名を隠して回す</label>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="switchToRoulette()">準備完了！ ✨</button>
+        </div>
+    </div>
+
+    <div id="rouletteScreen" class="screen">
+        <div id="result">Ready?</div>
+        <canvas id="canvas" width="500" height="500"></canvas>
+        <div>
+            <button id="spinBtn" class="btn btn-spin" onclick="spin()">SPIN!</button>
+        </div>
+        <button class="btn btn-secondary" onclick="switchToAdmin()">設定に戻る</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let currentAngle = 0;
+        let isSpinning = false;
+        let itemsData = [];
+
+        // 明るいパステルカラーセット
+        const colorPalette = ["#ff9ff3", "#feca57", "#ff6b6b", "#48dbfb", "#1dd1a1", "#a29bfe", "#ff9f43", "#54a0ff"];
+
+        function switchToRoulette() {
+            updateItems();
+            document.getElementById('adminScreen').classList.remove('active');
+            document.getElementById('rouletteScreen').classList.add('active');
+            document.getElementById('result').classList.remove('bounce');
+            document.getElementById('result').innerText = "何が出るかな？";
+            draw();
+        }
+
+        function switchToAdmin() {
+            document.getElementById('rouletteScreen').classList.remove('active');
+            document.getElementById('adminScreen').classList.add('active');
+        }
+
+        function updateItems() {
+            const text = document.getElementById('itemsInput').value;
+            const lines = text.split('\n').filter(x => x.trim() !== "");
+            let totalWeight = 0;
+            itemsData = lines.map(line => {
+                const parts = line.split(',');
+                const name = parts[0].trim();
+                const w = parseFloat(parts[1]) || 1;
+                totalWeight += w;
+                return { name, weight: w };
+            });
+            itemsData.totalWeight = totalWeight;
+        }
+
+        function draw() {
+            if (itemsData.length === 0) return;
+            const fakeDisplay = document.getElementById('fakeDisplay').checked;
+            const hideText = document.getElementById('hideText').checked;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 230;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let startAngle = currentAngle;
+            itemsData.forEach((item, i) => {
+                const ratio = fakeDisplay ? (1 / itemsData.length) : (item.weight / itemsData.totalWeight);
+                const arc = 2 * Math.PI * ratio;
+
+                // 扇形
+                ctx.beginPath();
+                ctx.fillStyle = colorPalette[i % colorPalette.length];
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, startAngle + arc);
+                ctx.fill();
+                
+                // 境界線
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // テキスト
+                if (!hideText) {
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(startAngle + arc / 2);
+                    ctx.textAlign = "right";
+                    ctx.fillStyle = "#fff";
+                    ctx.shadowColor = "rgba(0,0,0,0.2)";
+                    ctx.shadowBlur = 4;
+                    ctx.font = "bold 22px sans-serif";
+                    ctx.fillText(item.name, radius - 30, 10);
+                    ctx.restore();
+                }
+                startAngle += arc;
+            });
+
+            // 中央の円（デコレーション）
+            ctx.beginPath();
+            ctx.fillStyle = "#fff";
+            ctx.arc(centerX, centerY, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 針
+            ctx.fillStyle = "#333";
+            ctx.beginPath();
+            ctx.moveTo(canvas.width - 5, centerY);
+            ctx.lineTo(canvas.width - 45, centerY - 25);
+            ctx.lineTo(canvas.width - 45, centerY + 25);
+            ctx.fill();
+        }
+
+        function spin() {
+            if (isSpinning) return;
+            isSpinning = true;
+            document.getElementById('result').classList.remove('bounce');
+            document.getElementById('result').innerText = "まわってます...";
+            
+            let speed = Math.random() * 0.25 + 0.5;
+            const friction = 0.985;
+
+            function animate() {
+                speed *= friction;
+                currentAngle += speed;
+                draw();
+
+                if (speed > 0.001) {
+                    requestAnimationFrame(animate);
+                } else {
+                    isSpinning = false;
+                    finish();
+                }
+            }
+            animate();
+        }
+
+        function finish() {
+            const randomThreshold = Math.random() * itemsData.totalWeight;
+            let currentW = 0;
+            let winner = itemsData[itemsData.length-1].name;
+            for (const item of itemsData) {
+                currentW += item.weight;
+                if (randomThreshold <= currentW) { winner = item.name; break; }
+            }
+            
+            const resultEl = document.getElementById('result');
+            resultEl.innerText = "🎊 " + winner + " 🎊";
+            resultEl.classList.add('bounce');
+
+            // クラッカー（紙吹雪）を飛ばす！
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#ff6b6b', '#ffda79', '#48dbfb', '#1dd1a1']
+            });
+        }
+    </script>
+</body>
+</html>
