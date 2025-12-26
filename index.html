@@ -1,250 +1,118 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>お祭りルーレット（オフライン対応）</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>お祭りルーレット</title>
 
-  <!-- ===== PWA 追加 ===== -->
-  <link rel="manifest" href="./manifest.webmanifest">
-  <meta name="theme-color" content="#ff3b5c">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="ルーレット">
-  <link rel="apple-touch-icon" href="./icon-192.png">
-  <!-- ==================== -->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#ff3b5c">
+<link rel="apple-touch-icon" href="./icon-192.png">
 
-  <style>
-    :root{
-      --bg1:#12091f;        /* 夜空 */
-      --bg2:#2a0f3c;        /* 紫 */
-      --panel:#1b1230cc;    /* 半透明パネル */
-      --gold:#ffd56a;       /* 金 */
-      --red:#ff3b5c;        /* 朱 */
-      --blue:#3aa6ff;       /* 祭り青 */
-      --text:#fff7e6;
-      --ink:#1b1b1b;
-    }
+<style>
+:root{
+  --bg1:#12091f; --bg2:#2a0f3c;
+  --gold:#ffd56a; --red:#ff3b5c; --blue:#3aa6ff;
+  --panel:#1b1230cc; --text:#fff7e6;
+}
+body{
+  margin:0; min-height:100vh; color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;
+  display:flex; justify-content:center;
+  background:
+    radial-gradient(1200px 700px at 20% 10%, rgba(255,213,106,.25), transparent 60%),
+    radial-gradient(900px 600px at 80% 20%, rgba(58,166,255,.20), transparent 55%),
+    linear-gradient(160deg,var(--bg1),var(--bg2));
+}
+.screen{display:none;width:100%;max-width:520px;padding:20px;text-align:center}
+.active{display:block}
 
-    body{
-      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Segoe UI", sans-serif;
-      margin:0;
-      min-height:100vh;
-      color:var(--text);
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      overflow-x:hidden;
-      padding-bottom: env(safe-area-inset-bottom);
+.panel{
+  background:var(--panel); border:3px solid var(--gold);
+  border-radius:22px; padding:20px;
+  box-shadow:0 20px 60px rgba(0,0,0,.4)
+}
 
-      background:
-        radial-gradient(1200px 700px at 20% 10%, rgba(255,213,106,.25), transparent 60%),
-        radial-gradient(900px 600px at 80% 20%, rgba(58,166,255,.20), transparent 55%),
-        radial-gradient(900px 700px at 60% 90%, rgba(255,59,92,.18), transparent 55%),
-        linear-gradient(160deg, var(--bg1), var(--bg2));
-    }
+textarea{
+  width:100%; height:180px;
+  background:rgba(0,0,0,.25); color:var(--text);
+  border:2px solid var(--gold); border-radius:14px;
+  padding:12px; font-size:15px;
+}
 
-    /* 提灯みたいな上の飾り */
-    body::before{
-      content:"";
-      position:fixed;
-      left:0; right:0; top:0;
-      height:110px;
-      pointer-events:none;
-      background:
-        radial-gradient(circle at 7% 60%, rgba(255,59,92,.95) 0 18px, rgba(0,0,0,0) 19px),
-        radial-gradient(circle at 14% 60%, rgba(255,213,106,.95) 0 18px, rgba(0,0,0,0) 19px),
-        radial-gradient(circle at 21% 60%, rgba(58,166,255,.95) 0 18px, rgba(0,0,0,0) 19px),
-        radial-gradient(circle at 28% 60%, rgba(255,59,92,.95) 0 18px, rgba(0,0,0,0) 19px),
-        radial-gradient(circle at 35% 60%, rgba(255,213,106,.95) 0 18px, rgba(0,0,0,0) 19px),
-        radial-gradient(circle at 42% 60%, rgba(58,166,255,.95) 0 18px, rgba(0,0,0,0) 19px),
-        radial-gradient(circle at 49% 60%, rgba(255,59,92,.95) 0 18px, rgba(0,0,0,0) 19px),
-        radial-gradient(circle at 56% 60%, rgba(255,213,106,.95) 0 18px, rgba(0,0,0,0) 19px),
-        radial-gradient(circle at 63% 60%, rgba(58,166,255,.95) 0 18px, rgba(0,0,0,0) 19px),
-        radial-gradient(circle at 70% 60%, rgba(255,59,92,.95) 0 18px, rgba(0,0,0,0) 19px),
-        radial-gradient(circle at 77% 60%, rgba(255,213,106,.95) 0 18px, rgba(0,0,0,0) 19px),
-        radial-gradient(circle at 84% 60%, rgba(58,166,255,.95) 0 18px, rgba(0,0,0,0) 19px),
-        radial-gradient(circle at 91% 60%, rgba(255,59,92,.95) 0 18px, rgba(0,0,0,0) 19px),
-        linear-gradient(to bottom, rgba(0,0,0,.35), rgba(0,0,0,0));
-      filter: drop-shadow(0 10px 18px rgba(0,0,0,.45));
-      opacity:.95;
-    }
+.btn{
+  border:none; border-radius:999px;
+  padding:14px 32px; font-size:18px;
+  font-weight:900; cursor:pointer;
+}
+.btn-start{background:linear-gradient(#ffe08a,#ffb84d)}
+.btn-spin{background:linear-gradient(#ff4d6d,#ff1f4a);color:#fff;width:100%}
+.btn-back{
+  position:fixed; right:16px; bottom:16px;
+  background:rgba(255,255,255,.15); color:#fff;
+  border:1px solid var(--gold); font-size:12px;
+}
 
-    .screen{
-      display:none;
-      width:100%;
-      max-width:520px;
-      padding:22px 18px;
-      box-sizing:border-box;
-      text-align:center;
-    }
-    .active{display:block;animation:fadeIn .25s;}
-    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+/* 提灯 */
+.lanterns{
+  position:fixed; top:0; left:0; right:0;
+  display:flex; justify-content:space-around;
+  padding:10px 0; pointer-events:none;
+}
+.lantern{
+  width:22px; height:30px; border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, #fff, var(--red));
+  box-shadow:0 0 15px rgba(255,59,92,.8);
+  animation:sway 2.8s ease-in-out infinite alternate;
+}
+.lantern:nth-child(odd){background:radial-gradient(circle at 30% 30%, #fff, var(--gold))}
+@keyframes sway{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}
 
-    .admin-panel{
-      background: var(--panel);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      padding:22px;
-      border-radius:22px;
-      border: 3px solid rgba(255,213,106,.7);
-      box-shadow: 0 20px 60px rgba(0,0,0,.35);
-      position:relative;
-      overflow:hidden;
-    }
-    .admin-panel::before{
-      content:"";
-      position:absolute; inset:-2px;
-      border-radius:22px;
-      padding:2px;
-      background: linear-gradient(135deg, rgba(255,213,106,.9), rgba(255,59,92,.8), rgba(58,166,255,.7));
-      -webkit-mask:
-        linear-gradient(#000 0 0) content-box,
-        linear-gradient(#000 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      pointer-events:none;
-    }
+#canvas{
+  width:100%; max-width:460px;
+  border-radius:999px;
+  box-shadow:
+    0 0 0 6px var(--gold),
+    0 0 0 12px rgba(255,59,92,.3),
+    0 20px 40px rgba(0,0,0,.5);
+}
 
-    .title{
-      margin: 4px 0 6px;
-      font-size: 22px;
-      letter-spacing: .08em;
-      font-weight: 900;
-      text-shadow: 0 6px 18px rgba(0,0,0,.45);
-    }
-    .sub{
-      margin: 0 0 14px;
-      font-size: 12px;
-      opacity: .85;
-      letter-spacing: .06em;
-    }
+#result{
+  font-size:34px; font-weight:900;
+  color:var(--gold); margin:12px 0;
+}
 
-    textarea{
-      width:100%;
-      height:200px;
-      border: 2px solid rgba(255,213,106,.65);
-      border-radius:14px;
-      padding:12px 12px;
-      font-size:15px;
-      box-sizing:border-box;
-      outline:none;
-      margin:10px 0 6px;
-      resize:vertical;
-      color: var(--text);
-      background: rgba(0,0,0,.22);
-      box-shadow: inset 0 0 0 2px rgba(0,0,0,.15);
-    }
-
-    .note{
-      font-size:12px;
-      opacity:.85;
-      line-height:1.6;
-      text-align:left;
-      margin-top:10px;
-    }
-
-    #canvas{
-      width:100%;
-      max-width:460px;
-      height:auto;
-      cursor:pointer;
-      -webkit-tap-highlight-color: transparent;
-      border-radius: 999px;
-      box-shadow:
-        0 18px 45px rgba(0,0,0,.45),
-        0 0 0 6px rgba(255,213,106,.65),
-        0 0 0 12px rgba(255,59,92,.25);
-      background: rgba(0,0,0,.08);
-    }
-
-    #result{
-      font-size: 34px;
-      font-weight: 900;
-      margin: 14px 0 10px;
-      color: var(--gold);
-      min-height: 52px;
-      line-height: 1.15;
-      text-shadow:
-        0 10px 25px rgba(0,0,0,.55),
-        0 0 22px rgba(255,213,106,.25);
-    }
-
-    .hint{font-size:12px;opacity:.8;margin-top:6px;letter-spacing:.04em;}
-
-    .btn{
-      cursor:pointer;
-      border:none;
-      border-radius: 999px;
-      font-weight: 900;
-      padding: 14px 34px;
-      font-size: 18px;
-      -webkit-tap-highlight-color: transparent;
-      transition: transform .04s ease;
-    }
-    .btn:active{ transform: translateY(1px) scale(.99); }
-
-    .btn-primary{
-      color: var(--ink);
-      background: linear-gradient(180deg, #ffe08a, #ffb84d);
-      box-shadow: 0 14px 30px rgba(0,0,0,.35);
-    }
-
-    .btn-ghost{
-      color: var(--text);
-      background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,213,106,.35);
-      box-shadow: 0 14px 30px rgba(0,0,0,.25);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
-
-    .btn-spin{
-      color: white;
-      width:100%;
-      max-width:280px;
-      background: linear-gradient(180deg, #ff4d6d, #ff1f4a);
-      box-shadow:
-        0 18px 40px rgba(0,0,0,.45),
-        0 0 0 4px rgba(255,213,106,.35);
-    }
-
-    .btn-secondary{
-      background: rgba(255,255,255,.14);
-      color: var(--text);
-      position:fixed;bottom:18px;right:18px;
-      font-size:12px;padding:9px 14px;border-radius:999px;
-      border: 1px solid rgba(255,213,106,.4);
-      box-shadow: 0 12px 26px rgba(0,0,0,.35);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
-
-    .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px;}
-    .row .btn{font-size:14px;padding:10px 14px;border-radius:14px;}
-
-    .badge{
-      display:inline-block;
-      font-size:12px;
-      padding:6px 10px;
-      border-radius:999px;
-      background: rgba(255,213,106,.15);
-      border: 1px solid rgba(255,213,106,.35);
-      margin-top:8px;
-      letter-spacing:.06em;
-    }
-  </style>
+/* お神輿（当たり演出） */
+#miko{
+  position:fixed; left:50%; bottom:-200px;
+  transform:translateX(-50%);
+  font-size:120px; pointer-events:none;
+}
+.miko-show{
+  animation:miko 2.2s ease-out forwards;
+}
+@keyframes miko{
+  0%{bottom:-200px}
+  30%{bottom:120px}
+  60%{bottom:90px}
+  100%{bottom:-200px}
+}
+</style>
 </head>
 
 <body>
 
-  <!-- 設定画面 -->
-  <div id="adminScreen" class="screen active">
-    <div class="admin-panel">
-      <div class="title">🏮 お祭りルーレット</div>
-      <div class="sub">確率（分数OK）／残念を増やすと見た目も確率も合算</div>
+<!-- 提灯 -->
+<div class="lanterns">
+  <div class="lantern"></div><div class="lantern"></div><div class="lantern"></div>
+  <div class="lantern"></div><div class="lantern"></div><div class="lantern"></div>
+</div>
 
-      <textarea id="itemsInput">アマギフ①,1/5000
+<!-- 設定 -->
+<div id="admin" class="screen active">
+  <div class="panel">
+    <h2>🏮 お祭りルーレット</h2>
+    <textarea id="itemsInput">アマギフ①,1/5000
 アマギフ②,1.5/5000
 残念,624.6875/5000
 残念,624.6875/5000
@@ -254,279 +122,142 @@
 残念,624.6875/5000
 残念,624.6875/5000
 残念,624.6875/5000</textarea>
-
-      <div class="row">
-        <button class="btn btn-primary" onclick="start()">ルーレット開始</button>
-        <button class="btn btn-ghost" onclick="resetItems()">初期化</button>
-      </div>
-
-      <div class="badge">入力形式：景品名,重み（例：当たり,5 / 1/5000）</div>
-
-      <div class="note">
-        ・同じ景品を複数行にすると <b>枠が増える</b> ＋ <b>確率も合算</b> されます。<br>
-        ・確率を固定したい場合は「総確率 ÷ 枠数」を各行に入れてください。
-      </div>
-    </div>
+    <button class="btn btn-start" onclick="start()">ルーレット開始</button>
   </div>
+</div>
 
-  <!-- ルーレット画面 -->
-  <div id="rouletteScreen" class="screen">
-    <div id="result">Tap to Spin!</div>
-    <canvas id="canvas" width="500" height="500"></canvas>
-    <div class="hint">🎆 キャンバスをタップでも回せます</div>
+<!-- ルーレット -->
+<div id="game" class="screen">
+  <div id="result">Tap to Spin!</div>
+  <canvas id="canvas" width="500" height="500"></canvas>
+  <button class="btn btn-spin" onclick="spin()">ドン！</button>
+  <button class="btn btn-back" onclick="back()">設定へ</button>
+</div>
 
-    <div style="margin-top:18px;">
-      <button class="btn btn-spin" onclick="spin()">SPIN</button>
-    </div>
+<!-- お神輿 -->
+<div id="miko">⛩️</div>
 
-    <button class="btn btn-secondary" onclick="back()">設定へ</button>
-  </div>
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let items=[], angle=0, spinning=false;
+const LS="fes_items";
 
-  <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+/* ==== 太鼓音（Web Audio） ==== */
+const AudioCtx = window.AudioContext||window.webkitAudioContext;
+const actx = new AudioCtx();
+function taiko(){
+  const o = actx.createOscillator();
+  const g = actx.createGain();
+  o.type="sine"; o.frequency.value=90;
+  g.gain.setValueAtTime(1,actx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+0.5);
+  o.connect(g).connect(actx.destination);
+  o.start(); o.stop(actx.currentTime+0.5);
+}
 
-    let items = []; // [{name, weight}]
-    let angle = 0;
-    let spinning = false;
+/* ==== 抽選ロジック ==== */
+function w(raw){
+  if(raw.includes("/")){
+    const[a,b]=raw.split("/").map(Number);
+    return a/b;
+  }
+  return Number(raw)||1;
+}
+function parse(){
+  items=document.getElementById("itemsInput").value
+    .split("\n").filter(Boolean)
+    .map(l=>{
+      const[n,r]=l.split(",");
+      return{name:n,weight:w(r||"1")};
+    });
+}
+function pick(){
+  const t=items.reduce((s,i)=>s+i.weight,0);
+  let r=Math.random()*t;
+  for(let i=0;i<items.length;i++){
+    r-=items[i].weight;
+    if(r<=0)return i;
+  }
+  return items.length-1;
+}
 
-    const LS_KEY = "roulette_items_text_v1";
+/* ==== 描画 ==== */
+function draw(){
+  const r=230,cx=250,cy=250;
+  const arc=2*Math.PI/items.length;
+  ctx.clearRect(0,0,500,500);
+  const colors=["#ff3b5c","#ffd56a","#3aa6ff","#ff7a3d","#22c55e"];
+  items.forEach((it,i)=>{
+    ctx.beginPath();
+    ctx.fillStyle=colors[i%colors.length];
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,angle+i*arc,angle+(i+1)*arc);
+    ctx.fill();
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(angle+i*arc+arc/2);
+    ctx.fillStyle="#fff";
+    ctx.font="900 18px sans-serif";
+    ctx.textAlign="right";
+    ctx.fillText(it.name,r-20,8);
+    ctx.restore();
+  });
+  ctx.fillStyle="#111";
+  ctx.beginPath();
+  ctx.moveTo(494,250); ctx.lineTo(458,226); ctx.lineTo(458,274);
+  ctx.fill();
+}
 
-    function defaultItemsText(){
-      return `アマギフ①,1/5000
-アマギフ②,1.5/5000
-残念,624.6875/5000
-残念,624.6875/5000
-残念,624.6875/5000
-残念,624.6875/5000
-残念,624.6875/5000
-残念,624.6875/5000
-残念,624.6875/5000
-残念,624.6875/5000`;
-    }
-
-    function saveItemsText(){
-      localStorage.setItem(LS_KEY, document.getElementById("itemsInput").value);
-    }
-
-    function loadItemsText(){
-      const v = localStorage.getItem(LS_KEY);
-      if (v && v.trim()) document.getElementById("itemsInput").value = v;
-    }
-
-    function resetItems(){
-      if(!confirm("設定を初期化しますか？")) return;
-      document.getElementById("itemsInput").value = defaultItemsText();
-      saveItemsText();
-      alert("初期化しました");
-    }
-
-    // "1/5000" や "0.2" を数値にする
-    function parseWeight(raw) {
-      const s = (raw ?? "").trim();
-      if (!s) return 1;
-
-      // 分数 "a/b"
-      if (s.includes("/")) {
-        const [a, b] = s.split("/").map(x => Number(x.trim()));
-        if (Number.isFinite(a) && Number.isFinite(b) && b > 0) return a / b;
+/* ==== 操作 ==== */
+function start(){
+  parse(); localStorage.setItem(LS,itemsInput.value);
+  admin.classList.remove("active");
+  game.classList.add("active");
+  draw();
+}
+function back(){
+  game.classList.remove("active");
+  admin.classList.add("active");
+}
+function spin(){
+  if(spinning)return;
+  spinning=true; taiko();
+  const win=pick();
+  const arc=2*Math.PI/items.length;
+  const mid=win*arc+arc/2;
+  const two=2*Math.PI;
+  let delta=(((-mid-angle)%two)+two)%two + two*5;
+  const start=angle, end=angle+delta;
+  const st=performance.now();
+  function anim(t){
+    const p=Math.min(1,(t-st)/2600);
+    angle=start+(end-start)*(1-Math.pow(1-p,3));
+    draw();
+    if(p<1)requestAnimationFrame(anim);
+    else{
+      spinning=false;
+      result.textContent="🎊 "+items[win].name+" 🎊";
+      if(!items[win].name.includes("残念")){
+        miko.classList.add("miko-show");
+        setTimeout(()=>miko.classList.remove("miko-show"),2200);
       }
-
-      // 小数/整数
-      const n = Number(s);
-      if (Number.isFinite(n) && n > 0) return n;
-
-      return 1;
     }
+  }
+  requestAnimationFrame(anim);
+}
+canvas.onclick=spin;
 
-    function parseItems() {
-      const lines = document.getElementById("itemsInput").value
-        .split("\n")
-        .map(s => s.trim())
-        .filter(Boolean);
+/* 初期復元 */
+const saved=localStorage.getItem(LS);
+if(saved) itemsInput.value=saved;
+</script>
 
-      items = lines.map(line => {
-        const [nameRaw, weightRaw] = line.split(",");
-        const name = (nameRaw || "").trim() || "（無名）";
-        const weight = parseWeight(weightRaw);
-        return { name, weight };
-      });
-    }
-
-    function totalWeight() {
-      return items.reduce((sum, it) => sum + it.weight, 0);
-    }
-
-    // 重み付け抽選（当選index）
-    function pickWinnerIndex() {
-      const t = totalWeight();
-      let r = Math.random() * t;
-      for (let i = 0; i < items.length; i++) {
-        r -= items[i].weight;
-        if (r <= 0) return i;
-      }
-      return items.length - 1;
-    }
-
-    function start(){
-      saveItemsText();
-      parseItems();
-      if (items.length === 0) return alert("項目がありません");
-
-      document.getElementById("adminScreen").classList.remove("active");
-      document.getElementById("rouletteScreen").classList.add("active");
-      document.getElementById("result").innerText = "Tap to Spin!";
-      draw();
-    }
-
-    function back(){
-      document.getElementById("rouletteScreen").classList.remove("active");
-      document.getElementById("adminScreen").classList.add("active");
-    }
-
-    function draw(){
-      if (items.length === 0) return;
-
-      const r = 230;
-      const cx = 250, cy = 250;
-
-      // 見た目は等分（枠を増やしたい場合は行を増やす）
-      const arc = 2 * Math.PI / items.length;
-      ctx.clearRect(0,0,500,500);
-
-      const colors = ["#ff3b5c","#ffd56a","#3aa6ff","#ff7a3d","#8b5cf6","#22c55e"];
-
-      // 外枠（太い金縁）
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, cy, r + 8, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(0,0,0,.10)";
-      ctx.fill();
-      ctx.restore();
-
-      items.forEach((it, i) => {
-        const startA = angle + i * arc;
-        const endA = angle + (i + 1) * arc;
-
-        // セグメント
-        ctx.beginPath();
-        ctx.fillStyle = colors[i % colors.length];
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, r, startA, endA);
-        ctx.closePath();
-        ctx.fill();
-
-        // セグメント境界線
-        ctx.strokeStyle = "rgba(255,255,255,.35)";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // テキスト
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(startA + arc / 2);
-        ctx.fillStyle = "#fff";
-        ctx.font = "900 18px sans-serif";
-        ctx.textAlign = "right";
-        // 文字の縁取り（看板っぽく）
-        ctx.lineWidth = 6;
-        ctx.strokeStyle = "rgba(0,0,0,.35)";
-        ctx.strokeText(it.name, r - 22, 8);
-        ctx.fillText(it.name, r - 22, 8);
-        ctx.restore();
-      });
-
-      // 中央の丸（夜店の鈴っぽい）
-      ctx.beginPath();
-      ctx.arc(cx, cy, 44, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(0,0,0,.25)";
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(cx, cy, 38, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(255,213,106,.95)";
-      ctx.fill();
-
-      ctx.fillStyle = "#1b1b1b";
-      ctx.font = "900 16px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("祭", cx, cy + 6);
-
-      // ポインタ（右）
-      ctx.fillStyle="#111";
-      ctx.beginPath();
-      ctx.moveTo(494, 250);
-      ctx.lineTo(458, 226);
-      ctx.lineTo(458, 274);
-      ctx.closePath();
-      ctx.fill();
-
-      // ポインタの縁（金）
-      ctx.strokeStyle="rgba(255,213,106,.9)";
-      ctx.lineWidth=3;
-      ctx.stroke();
-    }
-
-    // 当選枠の中央で止める
-    function spin(){
-      if (spinning) return;
-      if (items.length === 0) parseItems();
-      if (items.length === 0) return;
-
-      spinning = true;
-
-      const winner = pickWinnerIndex();
-      const arc = 2 * Math.PI / items.length;
-      const mid = winner * arc + arc/2;
-
-      const twoPi = 2 * Math.PI;
-      // 右ポインタ(角度0)に当選の中心が来るように
-      const targetBase = ((-mid % twoPi) + twoPi) % twoPi;
-      const currentNorm = ((angle % twoPi) + twoPi) % twoPi;
-
-      let delta = (targetBase - currentNorm + twoPi) % twoPi;
-      delta += (5 + Math.floor(Math.random()*3)) * twoPi; // 5〜7回転
-
-      const startAngle = angle;
-      const endAngle = angle + delta;
-      const duration = 2600 + Math.random()*700;
-      const st = performance.now();
-
-      function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
-
-      document.getElementById("result").innerText = "抽選中…";
-
-      function anim(now){
-        const p = Math.min(1, (now - st) / duration);
-        const e = easeOutCubic(p);
-        angle = startAngle + (endAngle - startAngle) * e;
-        draw();
-
-        if (p < 1) requestAnimationFrame(anim);
-        else {
-          spinning = false;
-          document.getElementById("result").innerText = "🎊 " + items[winner].name + " 🎊";
-        }
-      }
-      requestAnimationFrame(anim);
-    }
-
-    // タップでも回せる
-    canvas.addEventListener("click", spin);
-
-    // 初回：保存済み設定を復元
-    loadItemsText();
-  </script>
-
-  <!-- ===== Service Worker 登録（PWA）===== -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js");
-      });
-    }
-  </script>
-  <!-- =================================== -->
+<script>
+if("serviceWorker"in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"));
+}
+</script>
 
 </body>
 </html>
